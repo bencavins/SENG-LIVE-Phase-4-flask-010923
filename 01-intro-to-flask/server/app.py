@@ -23,8 +23,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 migrate = Migrate(app, db)  # set up alembic
 db.init_app(app)  # set up sqlalchemy
 
-# 5. ✅ Navigate to `seed.rb`
-
 # 6. ✅ Routes
 @app.route('/', methods=['GET'])
 def root():
@@ -65,9 +63,6 @@ def get_productions():
         jsonify(data),
         200
     )
-   
-
-# 7. ✅ Run the server with `flask run` and verify your route in the browser at `http://localhost:5000/`
 
 # 8. ✅ Create a dynamic route
 @app.get('/productions/<int:id>')

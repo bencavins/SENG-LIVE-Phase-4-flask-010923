@@ -16,7 +16,7 @@
         # flask db upgrade 
         # python seed.py
 
-# Restful
+# ReST
 
 # | HTTP Verb 	|       Path       	| Description        	|
 # |-----------	|:----------------:	|--------------------	|
@@ -62,6 +62,16 @@ db.init_app(app)
     #  )
     # 4.5 Return `response`.
     # 4.6 After building the route, run the server and test in the browser.
+@app.get('/productions')
+def get_all_productions():
+    prods = Production.query.all()
+    data = []
+    for production in prods:
+        data.append(production.to_dict())
+    return make_response(
+        jsonify(data),
+        200
+    )
   
 # 5. ✅ Serialization
     # This is great, but there's a cleaner way to do this! Serialization will allow us to easily add our 
@@ -100,3 +110,5 @@ db.init_app(app)
 
 
 # 14. ✅ Add the new route to our api with `api.add_resource`
+if __name__ == '__main__':
+    app.run(port=5555, debug=True)

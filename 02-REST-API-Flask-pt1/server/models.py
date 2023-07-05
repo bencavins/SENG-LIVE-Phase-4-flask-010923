@@ -1,12 +1,15 @@
 
 from flask_sqlalchemy import SQLAlchemy
 # 6. ✅ Import `SerializerMixin` from `sqlalchemy_serializer`
+from sqlalchemy_serializer import SerializerMixin
 
 db = SQLAlchemy()
 
 # 7. ✅ Pass `SerializerMixin` to `Productions`
 class Production(db.Model):
     __tablename__ = 'productions'
+
+    serialize_rules = ('-cast_members.production',)
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String)
@@ -25,10 +28,24 @@ class Production(db.Model):
 
     def __repr__(self):
         return f'<Production Title:{self.title}, Genre:{self.genre}, Budget:{self.budget}, Image:{self.image}, Director:{self.director},ongoing:{self.ongoing}>'
+    
+    def to_dict(self):
+        """Return the Production obj as a dictionary"""
+        cast_members = []
+        for cast in self.cast_members:
+            cast_members.append(cast.to_dict())
+        return {
+            'id': self.id,
+            'title': self.title,
+            'genre': self.genre,
+            'cast_members': cast_members
+        }
 
 # 8. ✅ Pass `SerializerMixin` to `CastMember`
 class CastMember(db.Model):
     __tablename__ = 'cast_members'
+
+    serialize_rules = ('-productions.cast_members',)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -42,5 +59,10 @@ class CastMember(db.Model):
       
     def __repr__(self):
         return f'<Production Name:{self.name}, Role:{self.role}'
+    
+    def to_dict(self):
+        return {
+            'name': self.name
+        }
 
  # 9. ✅ Navigate back to `app.py` for further steps.

@@ -31,24 +31,18 @@
 from flask import Flask, request, make_response, jsonify
 from flask_migrate import Migrate
 
-# 1. ✅ Import `Api` and `Resource` from `flask_restful`
-    # ❓ What do these two classes do at a higher level? 
-
 from models import db, Production, CastMember
 
+import os
+
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Note: `app.json.compact = False` configures JSON responses to print on indented lines
-app.json.compact = False
+app.json.compact = True
 
 migrate = Migrate(app, db)
 db.init_app(app)
-
-# 2. ✅ Initialize the Api
-    # `api = Api(app)`
-
-# 3. ✅ Create a Production class that inherits from Resource
 
 # 4. ✅ Create a GET (All) Route
     # 4.1 Make a `get` method that takes `self` as a param.
@@ -72,7 +66,61 @@ def get_all_productions():
         jsonify(data),
         200
     )
-  
+
+@app.get('/productions/<int:id>')
+def get_production_by_id(id):
+    prod = Production.query.filter(
+        Production.id == id
+    ).first()
+
+    if not prod:
+        return {'status': "not found"}, 404
+
+    # make_response() and jsonify() get called for us
+    return prod.to_dict(), 200
+
+@app.post('/productions')
+def post_production():
+    data = request.get_json()
+    new_prod = Production(
+        title=data.get('title'),
+        genre=data.get('genre'),
+        budget=data.get('budget'),
+        image=data.get('image'),
+        director=data.get('director'),
+        description=data.get('description'),
+        ongoing=data.get('ongoing'),
+    )
+    db.session.add(new_prod)
+    db.session.commit()
+    return make_response(
+        jsonify(new_prod.to_dict()), 201
+    )
+
+# An example of a route that accepts more than one http verb
+# @app.route('/test/<int:id>', methods=['GET', 'DELETE', 'PATCH'])
+# def test(id):
+#     prod = Production.query.filter(
+#         Production.id == id
+#     )
+#     if request.method == 'GET':
+#         prod.one()
+#     elif request.method == 'DELETE':
+#         prod.delete()
+#     elif request.method == 'PATCH':
+#         prod.update()
+
+
+@app.delete('/productions/<int:id>')
+def delete_production_by_id(id):
+    Production.query.filter(
+        Production.id == id
+    ).delete()
+    db.session.commit()
+    return make_response(
+        jsonify({'status': 'success'}), 200
+    )
+
 # 5. ✅ Serialization
     # This is great, but there's a cleaner way to do this! Serialization will allow us to easily add our 
     # associations as well.
@@ -85,30 +133,7 @@ def get_all_productions():
     # 10.3 Return the `response` variable.
     # 10.4 After building the route, run the server and test your results in the browser.
  
-# 11. ✅ Create a POST Route
-    # Prepare a POST request in Postman. Under the `Body` tab, select `form-data` and fill out the body 
-    # of a production request. 
-    
-    # Create the POST route 
-    # 📚 Review With Students: request object
-    
-    # 11.1 Create a `post` method and pass it `self`.
-    # 11.2 Create a new production from the `request.form` object.
-    # 11.3 Add and commit the new production.
-    # 11.4 Convert the new production to a dictionary with `to_dict`
-    # 11.5 Set `make_response` to a `response` variable and pass it the new production along with a status of 201.
-    # 11.6 Test the route in Postman.
-
-   
-# 12. ✅ Add the new route to our api with `api.add_resource`
-
-# 13. ✅ Create a GET (One) route
-    # 13.1 Build a class called `ProductionByID` that inherits from `Resource`.
-    # 13.2 Create a `get` method and pass it the id along with `self`. (This is how we will gain access to 
-    # the id from our request)
-    # 13.3 Make a query for our production by the `id` and build a `response` to send to the browser.
 
 
-# 14. ✅ Add the new route to our api with `api.add_resource`
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

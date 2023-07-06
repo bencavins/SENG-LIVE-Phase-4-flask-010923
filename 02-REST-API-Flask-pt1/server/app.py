@@ -30,13 +30,15 @@
 
 from flask import Flask, request, make_response, jsonify
 from flask_migrate import Migrate
+from flask_cors import CORS
 
 from models import db, Production, CastMember
 
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+CORS(app)  # fix CORS errors
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Note: `app.json.compact = False` configures JSON responses to print on indented lines
 app.json.compact = True
@@ -120,6 +122,32 @@ def delete_production_by_id(id):
     return make_response(
         jsonify({'status': 'success'}), 200
     )
+
+@app.patch('/productions/<int:id>')
+def patch_production_by_id(id):
+    prod = Production.query.filter(
+        Production.id == id
+    ).first()
+    data = request.get_json()
+
+    for field in data:
+        setattr(prod, field, data[field])
+        # prod[field] = data[field]
+    
+    # alternative approach
+    # if 'title' in data:
+    #     prod.title = data['tile']
+    # if 'genre' in data:
+    #     prod.genre = data['genre']
+    #     # etc...
+
+    db.session.add(prod)
+    db.session.commit()
+    return make_response(
+        jsonify(prod.to_dict()),
+        200
+    )
+
 
 # 5. ✅ Serialization
     # This is great, but there's a cleaner way to do this! Serialization will allow us to easily add our 

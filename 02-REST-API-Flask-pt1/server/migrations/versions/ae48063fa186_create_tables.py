@@ -1,8 +1,8 @@
-"""empty message
+"""create tables
 
-Revision ID: e3816d1f55aa
+Revision ID: ae48063fa186
 Revises: 
-Create Date: 2023-07-05 10:25:47.871398
+Create Date: 2023-07-06 11:02:23.439710
 
 """
 from alembic import op
@@ -10,12 +10,10 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e3816d1f55aa'
+revision = 'ae48063fa186'
 down_revision = None
 branch_labels = None
 depends_on = None
-
-'uq_name'
 
 
 def upgrade():

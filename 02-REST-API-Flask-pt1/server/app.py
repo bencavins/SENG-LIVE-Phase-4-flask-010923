@@ -84,15 +84,25 @@ def get_production_by_id(id):
 @app.post('/productions')
 def post_production():
     data = request.get_json()
-    new_prod = Production(
-        title=data.get('title'),
-        genre=data.get('genre'),
-        budget=data.get('budget'),
-        image=data.get('image'),
-        director=data.get('director'),
-        description=data.get('description'),
-        ongoing=data.get('ongoing'),
-    )
+
+    try:
+        new_prod = Production(
+            title=data.get('title'),
+            genre=data.get('genre'),
+            budget=data.get('budget'),
+            image=data.get('image'),
+            director=data.get('director'),
+            description=data.get('description'),
+            ongoing=data.get('ongoing'),
+        )
+    except ValueError as e:
+        return make_response(
+            jsonify({
+                'status': 'error',
+                'message': str(e)
+            }), 401
+        )
+
     db.session.add(new_prod)
     db.session.commit()
     return make_response(

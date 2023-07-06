@@ -2,6 +2,7 @@
 from flask_sqlalchemy import SQLAlchemy
 # 6. ✅ Import `SerializerMixin` from `sqlalchemy_serializer`
 from sqlalchemy_serializer import SerializerMixin
+from sqlalchemy.orm import validates
 
 db = SQLAlchemy()
 
@@ -12,7 +13,7 @@ class Production(db.Model, SerializerMixin):
     serialize_rules = ('-cast_members.production',)
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String)
+    title = db.Column(db.String, unique=True)
     genre = db.Column(db.String)
     budget = db.Column(db.Float)
     image = db.Column(db.String)
@@ -24,7 +25,11 @@ class Production(db.Model, SerializerMixin):
 
     cast_members = db.relationship('CastMember', backref='production')
 
-    # 7.1 ✅ Create a serialize rule that will help add our `cast_members` to the response.
+    @validates('budget')
+    def validate_budget(self, key, new_budget):
+        if new_budget < 0:
+            raise ValueError('budget cannot be negative')
+        return new_budget
 
     def __repr__(self):
         return f'<Production Title:{self.title}, Genre:{self.genre}, Budget:{self.budget}, Image:{self.image}, Director:{self.director},ongoing:{self.ongoing}>'

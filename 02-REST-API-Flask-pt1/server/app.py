@@ -28,11 +28,11 @@
 
 
 
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, request, make_response, jsonify, session
 from flask_migrate import Migrate
 from flask_cors import CORS
 
-from models import db, Production, CastMember
+from models import db, Production, CastMember, User, bcrypt
 
 import os
 
@@ -42,9 +42,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Note: `app.json.compact = False` configures JSON responses to print on indented lines
 app.json.compact = True
+app.secret_key = os.environ.get('SECRET_KEY')
 
 migrate = Migrate(app, db)
 db.init_app(app)
+bcrypt.init_app(app)
 
 # 4. ✅ Create a GET (All) Route
     # 4.1 Make a `get` method that takes `self` as a param.
@@ -58,6 +60,67 @@ db.init_app(app)
     #  )
     # 4.5 Return `response`.
     # 4.6 After building the route, run the server and test in the browser.
+
+
+excluded_endpoints = ['login', 'signup']
+
+@app.before_request
+def check_login():
+    """Confirm the user is logged in"""
+    if request.endpoint not in excluded_endpoints:
+        user_id = session.get('user_id')
+        user = User.query.filter(
+            User.id == user_id
+        ).first()
+
+        if not user:
+            return make_response(
+                jsonify({'status': 'not authorized'}),
+                401
+            )
+
+
+@app.post('/signup')
+def signup():
+    data = request.get_json()
+    new_user = User(username=data['username'])
+    new_user.password_hash = data['password']
+    db.session.add(new_user)
+    db.session.commit()
+
+    return make_response(
+        jsonify({'status': 'success'}),
+        201
+    )
+
+@app.post('/login')
+def login():
+    data = request.get_json()
+    user = User.query.filter(
+        User.username == data['username']
+    ).first()
+    is_auth = user.authenticate(data['password'])
+
+    if not user:
+        return make_response(
+            jsonify({'status': 'user not found'}),
+            404
+        )
+    
+    if not is_auth:
+        return make_response(
+            jsonify({'status': 'login failed'}),
+            403
+        )
+    
+    # add cookie to browser session
+    session['user_id'] = user.id
+    return make_response(
+        jsonify(user.to_dict()),
+        201
+    )
+
+
 @app.get('/productions')
 def get_all_productions():
     prods = Production.query.all()

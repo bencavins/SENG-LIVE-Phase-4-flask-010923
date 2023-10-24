@@ -8,18 +8,32 @@
 
 # 2. ✅ Set Up Imports
 from flask import Flask, make_response, jsonify
+from flask_migrate import Migrate
+from models import db, Pet
 
 
 # 3. ✅ Initialize the App
 app = Flask(__name__)
-  
     
-    # Configure the database
-    # ['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'`
-    # ['SQLALCHEMY_TRACK_MODIFICATIONS'] = False` 
-    
+# Configure the database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+db.init_app(app)
 
  # 4. ✅ Migrate 
+migrate = Migrate()
+migrate.init_app(app, db)
+# flask-sqlalchemy = "2.5.1"
+
+# Alembic commands:
+# to create the db framework:
+#  flask db init  (only needs to be run once)
+# to create a revision:
+#  flask db migrate -m 'add pets'
+# to apply the changes:
+#  flask db upgrade head
 
 # 5. ✅ Navigate to `seed.rb`
 
@@ -37,9 +51,15 @@ def hello():
 
 # can add url pattern matching with <>
 # data gets passed into view function as a parameter
-@app.route('/books/<int:id>')
-def book_by_id(id):
-    return make_response(jsonify({"id": id}), 200)
+@app.route('/pets/<int:id>')
+def pets_by_id(id):
+    # query the db for a pet with this id
+    pet = Pet.query.filter(Pet.id == id).one()
+    # send json data to client
+    return make_response(jsonify({
+        "id": pet.id, 
+        "name": pet.name
+    }), 200)
    
 
 # 7. ✅ Run the server with `flask run` and verify your route in the browser at `http://localhost:5000/`

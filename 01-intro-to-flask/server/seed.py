@@ -6,8 +6,8 @@ from models import db, Pet, Owner
 
 with app.app_context():
     # delete everything from all tables
-    # Pet.query.delete()
-    # Owner.query.delete()
+    Pet.query.delete()
+    Owner.query.delete()
 
     o1 = Owner(name='joe')
     o2 = Owner(name='anne')

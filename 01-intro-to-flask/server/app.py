@@ -9,7 +9,7 @@
 # 2. ✅ Set Up Imports
 from flask import Flask, make_response, jsonify
 from flask_migrate import Migrate
-from models import db, Pet
+from models import db, Pet, Owner
 
 
 # 3. ✅ Initialize the App
@@ -56,10 +56,13 @@ def pets_by_id(id):
     # query the db for a pet with this id
     pet = Pet.query.filter(Pet.id == id).one()
     # send json data to client
-    return make_response(jsonify({
-        "id": pet.id, 
-        "name": pet.name
-    }), 200)
+    # can use custom serialize rules by passing in "rules"
+    return make_response(jsonify(pet.to_dict(rules=('-owner',))), 200)
+
+@app.route('/owners/<int:id>')
+def onwer_by_id(id):
+    owner = Owner.query.filter(Owner.id == id).one()
+    return make_response(jsonify(owner.to_dict()), 200)
    
 
 # 7. ✅ Run the server with `flask run` and verify your route in the browser at `http://localhost:5000/`

@@ -83,6 +83,7 @@ def check_session():
 
 @app.route('/logout', methods=['DELETE'])
 def logout():
+    # delete cookie
     session.pop('user_id')
     return {'message': 'logged out'}, 200
 
@@ -167,20 +168,6 @@ def onwer_by_id(id):
         db.session.delete(owner)
         db.session.commit()
         return {}, 200
-   
-
-# 7. ✅ Run the server with `flask run` and verify your route in the browser at `http://localhost:5000/`
-
-# 8. ✅ Create a dynamic route
-
-
-
-# 9.✅ Update the route to find a `production` by its `title` and send it to our browser
-    
-   
-
-# Note: If you'd like to run the application as a script instead of using `flask run`, uncomment the line below 
-# and run `python app.py`
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

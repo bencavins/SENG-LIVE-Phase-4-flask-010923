@@ -1,48 +1,90 @@
 #!/usr/bin/env python3
 
-# 📚 Review With Students:
-    # Request-Response Cycle
-    # Web Servers and WSGI/Werkzeug
+import os
 
-# 1. ✅ Navigate to `models.py`
-
-# 2. ✅ Set Up Imports
-from flask import Flask, make_response, jsonify, request
+from flask import Flask, make_response, jsonify, request, session
 from flask_migrate import Migrate
-from models import db, Pet, Owner
+from models import db, Pet, Owner, User
 
 
-# 3. ✅ Initialize the App
+# Initialize the App
 app = Flask(__name__)
     
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.environ.get('SECRET_KEY')
 
 # Initialize database
 db.init_app(app)
 
- # 4. ✅ Migrate 
+# Initialize migration
 migrate = Migrate()
 migrate.init_app(app, db)
-# flask-sqlalchemy = "2.5.1"
 
-# Alembic commands:
-# to create the db framework:
-#  flask db init  (only needs to be run once)
-# to create a revision:
-#  flask db migrate -m 'add pets'
-# to apply the changes:
-#  flask db upgrade head
+excluded_endpoints = ['login', 'signup', 'check_session', 'root']
 
-# 5. ✅ Navigate to `seed.rb`
+@app.before_request
+def check_logged_in():
+    if request.endpoint not in excluded_endpoints:
+        user_id = session.get('user_id')
+        user = User.query.filter(User.id == user_id).first()
 
-# 6. ✅ Routes
+        if not user:
+            # invalid cookie
+            return {'message': 'invalid session'}, 401
+
+# Routes
 @app.route('/')
 def root():
     # make_resonse needs json data and status code
     return make_response(jsonify({}), 200)
     # return make_response('<h1>HELLO</h1>', 200)
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    new_user = User(username=data['username'])
+    new_user.password_hash = data['password']
+    db.session.add(new_user)
+    db.session.commit()
+
+    return {'message': 'user added'}, 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    # check if user exists
+    user = User.query.filter(User.username == data['username']).first()
+
+    if not user:
+        return {'message': 'user not found'}, 404
+    
+    if user.authenticate(data['password']):
+        # passwords matched, add cookie
+        session['user_id'] = user.id
+        return {'message': 'login success'}, 201
+    else:
+        # password did not match, send error resp
+        return {'message': 'login failed'}, 401
+
+@app.route('/check_session')
+def check_session():
+    user_id = session.get('user_id')
+    user = User.query.filter(User.id == user_id).first()
+
+    if not user:
+        # invalid cookie
+        return {'message': 'invalid session'}, 401
+    
+    # valid cookie
+    return {'message': 'valid session'}, 200
+
+@app.route('/logout', methods=['DELETE'])
+def logout():
+    session.pop('user_id')
+    return {'message': 'logged out'}, 200
 
 # methods tells us what http verbs we accept
 @app.route('/hello', methods=['GET', 'POST'])
@@ -115,10 +157,16 @@ def pets_by_id(id):
         
         return pet.to_dict(), 200
 
-@app.route('/owners/<int:id>')
+@app.route('/owners/<int:id>', methods=['GET', 'DELETE'])
 def onwer_by_id(id):
-    owner = Owner.query.filter(Owner.id == id).one()
-    return make_response(jsonify(owner.to_dict()), 200)
+    owner = Owner.query.filter(Owner.id == id).first()
+
+    if request.method == 'GET':
+        return make_response(jsonify(owner.to_dict()), 200)
+    elif request.method == 'DELETE':
+        db.session.delete(owner)
+        db.session.commit()
+        return {}, 200
    
 
 # 7. ✅ Run the server with `flask run` and verify your route in the browser at `http://localhost:5000/`
